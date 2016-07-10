@@ -138,7 +138,7 @@ description on its purpose.
 In order to build and run the project execute:
 
 ```sh
-gradle bootRun
+grails run-app
 ```
 
 Then, go to [http://localhost:3099/](http://localhost:3099/).
