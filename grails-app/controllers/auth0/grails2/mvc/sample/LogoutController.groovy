@@ -14,13 +14,10 @@ class LogoutController {
 
     def logout() {
         log.info("Performing logout")
-        GrailsWebRequest webUtils = WebUtils.retrieveGrailsWebRequest()
-        def req = webUtils.getCurrentRequest()
-        if (req.getSession() != null) {
-            req.getSession().invalidate()
+        if (request.getSession(false)) {
+            request.session.invalidate()
         }
-        def logoutPath = auth0Config.getOnLogoutRedirectTo()
-        redirect(uri: logoutPath)
+        redirect(uri: auth0Config.onLogoutRedirectTo)
     }
 
 }

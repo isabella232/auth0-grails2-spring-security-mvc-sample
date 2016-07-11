@@ -65,7 +65,7 @@ or username-password DB connection.
 
 
 Since this sample applies Role based authorization on the Home Page (defaults to requiring `ROLE_ADMIN`), go to `Rules`
-and create the following new Rule:
+(in the Auth0 dashboard) and create the following new Rule (just copy and paste the snippet below into a new rule):
 
 ```
 function (user, context, callback) {
@@ -102,6 +102,11 @@ function (user, context, callback) {
 In our simple Rule above, we add `ROLE_ADMIN` to any user profiles whose email addresses are `gmail.com` and `auth0.com` domains.
 Otherwise, we only provide `ROLE_USER` role. Our Spring Security Sample app will read this information from the UserProfile and apply
 the granted authorities when checking authorization access to secured endpoints configured with Role based permissions
+Obviously, please modify the rule to your needs (for example the email domain you will be using etc if not gmail).
+
+### Inside the Application
+
+###### Authentication and authorization settings
 
 Here is our sample `Auth0SecurityConfig` entry where we specify the endpoints security settings -
 defined under `src/com.auth0.spring.security.mvc.Auth0SecurityConfig.java`
@@ -118,11 +123,20 @@ defined under `src/com.auth0.spring.security.mvc.Auth0SecurityConfig.java`
 Here, we only allow users with `ROLE_USER` or `ROLE_ADMIN` to access the home page.
 
 
-### Inside the Application - update configuration information
+###### Update configuration information
 
 Enter your:
 
 `client_id`, `issuer`, `client_secret`, and `domain` information into `grails-app/conf/auth0.properties`
+
+An example of populated values is shown below (please use your own values):
+
+```
+auth0.domain: arcseldon.auth0.com
+auth0.issuer: https://arcseldon.auth0.com/
+auth0.clientId: 7JbjgoK7BAuLL4AL6x8pOYfNSiBeZMdW
+auth0.clientSecret: dn0p_95MmZKMDoXXXXXXXkE5Uu1Opo9oXXXXaho03P9Q907oHUE
+```
 
 Note: There is a properties entry in `auth0.properties` that you do not need to touch. Leave values as `false`
 

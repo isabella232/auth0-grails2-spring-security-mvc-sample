@@ -1,5 +1,3 @@
-<%@ taglib prefix="fnn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -26,10 +24,10 @@
         <h3 class="text-muted">App.com</h3>
     </div>
     <div class="jumbotron">
-        <h3>Hello ${model.user.name}!</h3>
-        <p class="lead">Your nickname is: ${model.user.nickname}</p>
-        <p class="lead">Your user id is: ${model.user.userId}</p>
-        <p><img class="avatar" src="${model.user.picture}"/></p>
+        <h3>Hello ${user.name}!</h3>
+        <p class="lead">Your nickname is: ${user.nickname}</p>
+        <p class="lead">Your user id is: ${user.userId}</p>
+        <p><img class="avatar" src="${user.picture}"/></p>
     </div>
     <div class="row marketing">
         <div class="col-lg-6">
@@ -59,14 +57,14 @@
 
 <script type="text/javascript">
     $(function () {
-        $.growl({title: "Welcome  ${model.user.nickname}", message: "We hope you enjoy using this site!"});
+        $.growl({title: "Welcome  ${user.nickname}", message: "We hope you enjoy using this site!"});
     });
     $("#logout").click(function(e) {
         e.preventDefault();
         $("#home").removeClass("active");
         $("#logout").addClass("active");
         // assumes we are not part of SSO so just logout of local session
-        window.location = "${createLink(action: 'logout', controller: 'logout', absolute: true)}";
+        window.location = "${createLink(controller: 'logout', absolute: true)}";
     });
 </script>
 

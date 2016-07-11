@@ -5234,3 +5234,16 @@ n:517:org/springframework/security/core/userdetails/UserDetails
 n:221:org/springframework/security/core/GrantedAuthority
 y:3494:org/springframework/security/core/context/SecurityContextHolder
 n:3079:BuildConfig$_run_closure1_closure4
+n:410:org/springframework/security/core/context/SecurityContextHolderStrategy
+n:348:org/springframework/security/core/context/SecurityContext
+n:2909:org/springframework/boot/context/embedded/FilterRegistrationBean
+n:7851:org/springframework/boot/context/embedded/AbstractFilterRegistrationBean
+n:3385:org/springframework/boot/context/embedded/RegistrationBean
+n:288:org/springframework/boot/context/embedded/ServletContextInitializer
+n:886:org/springframework/boot/autoconfigure/condition/ConditionalOnProperty
+n:786:org/springframework/context/annotation/Bean
+n:1544:org/springframework/beans/factory/annotation/Autowire
+n:568:org/springframework/context/annotation/Configuration
+n:836:org/springframework/boot/context/properties/ConfigurationProperties
+n:529:org/springframework/context/annotation/PropertySources
+n:717:org/springframework/context/annotation/PropertySource

@@ -1,5 +1,3 @@
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
@@ -17,15 +15,15 @@
             $.growl({title: "Welcome!", message: "Please log in"});
         });
         $(function () {
-            var lock = new Auth0Lock('${model.clientId}', '${model.domain}');
+            var lock = new Auth0Lock('${clientId}', '${domain}');
             lock.showSignin({
                 authParams: {
-                    state: '${model.state}',
+                    state: '${state}',
                     // change scopes to whatever you like
                     // claims are added to JWT id_token - openid profile gives everything
-                    scope: 'openid user_id name nickname email picture'
+                    scope: 'openid roles user_id name nickname email picture'
                 },
-                callbackURL: "${createLink(action: 'callback', controller: 'callback', absolute: true)}",
+                callbackURL: "${createLink(controller: 'callback', absolute: true)}",
                 responseType: 'code',
                 popup: false
             });
