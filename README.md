@@ -1,4 +1,4 @@
-## Sample application demonstrating Auth0, Grails 2, and Spring Security integration for a Java Spring MVC application
+## Sample application demonstrating Auth0, Grails 2, and Spring Security integration for a Grails 2 MVC application
 
 This is a companion sample for the [Auth0 Spring Security MVC](https://github.com/auth0/auth0-spring-security-mvc) library.
 Please refer to that library and documentation for further information specific to the library itself.
