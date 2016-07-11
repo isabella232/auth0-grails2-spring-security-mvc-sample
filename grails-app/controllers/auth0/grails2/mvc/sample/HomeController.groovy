@@ -20,12 +20,11 @@ class HomeController {
         log.info("Home page")
         def req = WebUtils.retrieveGrailsWebRequest().getCurrentRequest()
         Auth0UserDetails principal = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // quick demonstration of checking roles programmatically
         for(GrantedAuthority grantedAuthority: principal.getAuthorities()) {
             String authority = grantedAuthority.getAuthority();
             log.info(authority);
             if (("ROLE_ADMIN".equals(authority))) {
-                // just a simple callout to demonstrate role based authorization at service level
-                // non-Admin user would be rejected trying to call this service
                 log.info("Yes, admin!");
             }
         }
