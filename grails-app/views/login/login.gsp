@@ -5,7 +5,7 @@
     <asset:stylesheet src="bootstrap.css"/>
     <asset:stylesheet src="jquery.growl.css"/>
     <script src="http://code.jquery.com/jquery.js"></script>
-    <script src="http://cdn.auth0.com/js/lock-9.min.js"></script>
+    <script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
     <asset:javascript src="jquery.growl.js"/>
 </head>
 <body>
@@ -15,18 +15,20 @@
             $.growl({title: "Welcome!", message: "Please log in"});
         });
         $(function () {
-            var lock = new Auth0Lock('${clientId}', '${domain}');
-            lock.showSignin({
-                authParams: {
-                    state: '${state}',
-                    // change scopes to whatever you like
-                    // claims are added to JWT id_token - openid profile gives everything
-                    scope: 'openid roles user_id name nickname email picture'
-                },
-                callbackURL: "${createLink(controller: 'callback', absolute: true)}",
-                responseType: 'code',
-                popup: false
+            var lock = new Auth0Lock('${clientId}', '${domain}', {
+                auth: {
+                    redirectUrl: "${createLink(controller: 'callback', absolute: true)}",
+                    responseType: 'code',
+                    params: {
+                        state: '${state}',
+                        // Learn about scopes: https://auth0.com/docs/scopes
+                        scope: 'openid user_id name nickname email picture'
+                    }
+                }
             });
+            setTimeout(function () {
+                lock.show();
+            }, 1500);
         });
     </script>
 </div>
