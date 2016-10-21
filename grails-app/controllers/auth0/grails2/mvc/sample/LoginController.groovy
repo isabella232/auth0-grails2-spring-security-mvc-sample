@@ -1,8 +1,8 @@
 package auth0.grails2.mvc.sample
 
-import com.auth0.web.Auth0Config
-import com.auth0.web.NonceUtils
-import com.auth0.web.SessionUtils
+import com.auth0.NonceUtils
+import com.auth0.SessionUtils
+import com.auth0.spring.security.mvc.Auth0Config
 import org.springframework.beans.factory.annotation.Autowired
 
 class LoginController {

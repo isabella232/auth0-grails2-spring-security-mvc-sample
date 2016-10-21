@@ -1,6 +1,6 @@
 package auth0.grails2.mvc.sample
 
-import com.auth0.web.Auth0CallbackHandler
+import com.auth0.spring.security.mvc.Auth0CallbackHandler
 import org.springframework.beans.factory.annotation.Autowired
 
 class CallbackController {

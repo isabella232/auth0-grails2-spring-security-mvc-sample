@@ -1,26 +1,32 @@
 package com.auth0.spring.security.mvc;
 
+import com.auth0.Auth0AuthorityStrategy;
+import com.auth0.Auth0User;
+import com.auth0.SessionUtils;
+import com.auth0.jwt.Algorithm;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.JWTVerifyException;
-import com.auth0.web.Auth0User;
-import com.auth0.web.SessionUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.Validate;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Map;
+
+import static com.auth0.jwt.pem.PemReader.readPublicKey;
 
 /**
  * Class that verifies the JWT token and when valid, it will set
@@ -29,10 +35,8 @@ import java.util.Map;
 public class Auth0AuthenticationProvider implements AuthenticationProvider,
         InitializingBean {
 
-    private final Log logger = LogFactory.getLog(getClass());
-
-    private static final AuthenticationException AUTH_ERROR =
-            new Auth0TokenException("Authentication Error");
+    @Autowired
+    ServletContext servletContext;
 
     private JWTVerifier jwtVerifier;
     private String domain;
@@ -42,16 +46,22 @@ public class Auth0AuthenticationProvider implements AuthenticationProvider,
     private String securedRoute;
     private boolean base64EncodedSecret;
     private Auth0AuthorityStrategy authorityStrategy;
+    private Algorithm signingAlgorithm;
+    private String publicKeyPath;
 
     public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
         try {
-            final String token = ((Auth0JWTToken) authentication).getJwt();
-            logger.info("Trying to authenticate with token: " + token);
+            // always verify JWT token
             final Auth0JWTToken tokenAuth = ((Auth0JWTToken) authentication);
+            final String token = tokenAuth.getJwt();
             final Map<String, Object> decoded = jwtVerifier.verify(token);
-            logger.debug("Decoded JWT token" + decoded);
+
+            // check current authentication status of user and avoid re-authentication setup if already authenticated
+            final Authentication existingAuthentication = SecurityContextHolder.getContext().getAuthentication();
+            if (existingAuthentication != null && existingAuthentication.isAuthenticated()) {
+                return existingAuthentication;
+            }
             tokenAuth.setAuthenticated(true);
-            // Retrieve our Auth0User object from session
             final ServletRequestAttributes servletReqAttr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
             final HttpServletRequest req = servletReqAttr.getRequest();
             final Auth0User auth0User = SessionUtils.getAuth0User(req);
@@ -60,29 +70,17 @@ public class Auth0AuthenticationProvider implements AuthenticationProvider,
             tokenAuth.setDetails(decoded);
             return authentication;
         } catch (InvalidKeyException e) {
-            logger.debug("InvalidKeyException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("InvalidKeyException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (NoSuchAlgorithmException e) {
-            logger.debug("NoSuchAlgorithmException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("NoSuchAlgorithmException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (IllegalStateException e) {
-            logger.debug("IllegalStateException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("IllegalStateException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (SignatureException e) {
-            logger.debug("SignatureException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("SignatureException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (IOException e) {
-            logger.debug("IOException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("IOException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (JWTVerifyException e) {
-            logger.debug("JWTVerifyException thrown while decoding JWT token "
-                    + e.getLocalizedMessage());
-            throw AUTH_ERROR;
+            throw new Auth0TokenException("JWTVerifyException thrown while decoding JWT token " + e.getLocalizedMessage());
         }
     }
 
@@ -99,68 +97,104 @@ public class Auth0AuthenticationProvider implements AuthenticationProvider,
             throw new IllegalStateException(
                     "You must set which route pattern is used to check for users so that they must be authenticated");
         }
-        // Auth0 Client Secrets are currently Base64 encoded,
-        // Auth0 Resource Server Signing Secrets are not Base64 encoded
-        if (base64EncodedSecret) {
-            jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId, issuer);
-        } else {
-            jwtVerifier = new JWTVerifier(clientSecret, clientId, issuer);
+        switch (signingAlgorithm) {
+            case HS256:
+            case HS384:
+            case HS512:
+                // Auth0 Client Secrets are currently Base64 encoded
+                if (base64EncodedSecret) {
+                    jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId, issuer);
+                } else {
+                    jwtVerifier = new JWTVerifier(clientSecret, clientId, issuer);
+                }
+                return;
+            case RS256:
+            case RS384:
+            case RS512:
+                Validate.notEmpty(publicKeyPath);
+                try {
+                    final String publicKeyRealPath = servletContext.getRealPath(publicKeyPath);
+                    final PublicKey publicKey = readPublicKey(publicKeyRealPath);
+                    Validate.notNull(publicKey);
+                    jwtVerifier = new JWTVerifier(publicKey, clientId);
+                    return;
+                } catch (Exception e) {
+                    throw new IllegalStateException(e.getMessage(), e.getCause());
+                }
+            default:
+                throw new IllegalStateException("Unsupported signing method: " + signingAlgorithm.getValue());
         }
     }
 
-    public String getDomain() {
+    protected String getDomain() {
         return domain;
     }
 
-    public void setDomain(String domain) {
+    protected void setDomain(String domain) {
         this.domain = domain;
     }
 
-    public String getIssuer() {
+    protected String getIssuer() {
         return issuer;
     }
 
-    public void setIssuer(String issuer) {
+    protected void setIssuer(String issuer) {
         this.issuer = issuer;
     }
 
-    public String getClientId() {
+    protected String getClientId() {
         return clientId;
     }
 
-    public void setClientId(String clientId) {
+    protected void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
-    public String getClientSecret() {
+    protected String getClientSecret() {
         return clientSecret;
     }
 
-    public void setClientSecret(String clientSecret) {
+    protected void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
     }
 
-    public String getSecuredRoute() {
+    protected String getSecuredRoute() {
         return securedRoute;
     }
 
-    public void setSecuredRoute(String securedRoute) {
+    protected void setSecuredRoute(String securedRoute) {
         this.securedRoute = securedRoute;
     }
 
-    public boolean isBase64EncodedSecret() {
+    protected boolean isBase64EncodedSecret() {
         return base64EncodedSecret;
     }
 
-    public void setBase64EncodedSecret(boolean base64EncodedSecret) {
+    protected void setBase64EncodedSecret(boolean base64EncodedSecret) {
         this.base64EncodedSecret = base64EncodedSecret;
     }
 
-    public Auth0AuthorityStrategy getAuthorityStrategy() {
+    protected Auth0AuthorityStrategy getAuthorityStrategy() {
         return authorityStrategy;
     }
 
-    public void setAuthorityStrategy(Auth0AuthorityStrategy authorityStrategy) {
+    protected void setAuthorityStrategy(Auth0AuthorityStrategy authorityStrategy) {
         this.authorityStrategy = authorityStrategy;
+    }
+
+    protected Algorithm getSigningAlgorithm() {
+        return signingAlgorithm;
+    }
+
+    protected void setSigningAlgorithm(Algorithm signingAlgorithm) {
+        this.signingAlgorithm = signingAlgorithm;
+    }
+
+    protected String getPublicKeyPath() {
+        return publicKeyPath;
+    }
+
+    protected void setPublicKeyPath(String publicKeyPath) {
+        this.publicKeyPath = publicKeyPath;
     }
 }

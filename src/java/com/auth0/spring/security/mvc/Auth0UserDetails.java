@@ -1,17 +1,13 @@
 package com.auth0.spring.security.mvc;
 
+import com.auth0.Auth0AuthorityStrategy;
+import com.auth0.Auth0User;
 import com.auth0.authentication.result.UserIdentity;
-import com.auth0.web.Auth0User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implementation of Spring Security UserDetails Object
@@ -21,8 +17,6 @@ public class Auth0UserDetails implements UserDetails {
 
     private static final long serialVersionUID = 2058797193125711681L;
 
-    private static final Logger logger = LoggerFactory.getLogger(Auth0UserDetails.class);
-
     private String userId;
     private String username;
     private String name;
@@ -31,6 +25,7 @@ public class Auth0UserDetails implements UserDetails {
     private String nickname;
     private String picture;
     private Map<String, Object> extraInfo;
+    private Map<String, Object> userMetadata;
     private List<UserIdentity> identities;
     private ArrayList<GrantedAuthority> authorities;
 
@@ -52,8 +47,7 @@ public class Auth0UserDetails implements UserDetails {
         this.picture = auth0User.getPicture();
         this.identities = auth0User.getIdentities();
         this.extraInfo = auth0User.getExtraInfo();
-//        setupAuthorities(auth0User);
-
+        this.userMetadata = auth0User.getUserMetadata();
         setupGrantedAuthorities(auth0User, authorityStrategy);
     }
 
@@ -65,30 +59,26 @@ public class Auth0UserDetails implements UserDetails {
         this.authorities = new ArrayList<GrantedAuthority>();
         if (Auth0AuthorityStrategy.ROLES.equals(authorityStrategy)) {
             if (auth0User.getRoles() != null) {
-                logger.debug("Attempting to map Roles");
                 try {
                     for (final String role : auth0User.getRoles()) {
                         this.authorities.add(new SimpleGrantedAuthority(role));
                     }
                 } catch (ClassCastException e) {
                     e.printStackTrace();
-                    logger.error("Error setting up GrantedAuthority using Roles");
                 }
             }
         } else if (Auth0AuthorityStrategy.GROUPS.equals(authorityStrategy)) {
             if (auth0User.getGroups() != null) {
-                logger.debug("Attempting to map Groups");
                 try {
                     for (final String group : auth0User.getGroups()) {
                         this.authorities.add(new SimpleGrantedAuthority(group));
                     }
                 } catch (ClassCastException e) {
                     e.printStackTrace();
-                    logger.error("Error setting up GrantedAuthority using Groups");
                 }
             }
         } else if (Auth0AuthorityStrategy.SCOPE.equals(authorityStrategy)) {
-            throw new IllegalStateException("SCOPE authority strategy currently not supported for MVC apps");
+            throw new IllegalStateException("SCOPE authority strategy not supported for MVC apps");
         }
     }
 
@@ -112,8 +102,20 @@ public class Auth0UserDetails implements UserDetails {
         return picture;
     }
 
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public Map<String, Object> getExtraInfo() {
+        return Collections.unmodifiableMap(extraInfo);
+    }
+
     public List<UserIdentity> getIdentities() {
-        return identities;
+        return Collections.unmodifiableList(identities);
+    }
+
+    public Map<String, Object> getUserMetadata() {
+        return Collections.unmodifiableMap(userMetadata);
     }
 
     @Override
@@ -122,11 +124,11 @@ public class Auth0UserDetails implements UserDetails {
     }
 
     /**
-     * Will return UnsupportedOperationException
+     * Will always return null
      */
     @Override
     public String getPassword() {
-        throw new UnsupportedOperationException("Password is protected");
+        return null;
     }
 
     /**
@@ -141,44 +143,47 @@ public class Auth0UserDetails implements UserDetails {
      * Indicates whether the user's account has expired. An expired account cannot be
      * authenticated.
      *
+     * This implementation shall return true by default
+     *
      * @return <code>true</code> if the user's account is valid (ie non-expired),
      * <code>false</code> if no longer valid (ie expired)
      */
     @Override
     public boolean isAccountNonExpired() {
-        // @TODO - review this
-        return false;
+        return true;
     }
 
     /**
      * Indicates whether the user is locked or unlocked. A locked user cannot be
      * authenticated.
      *
+     * This implementation shall return true by default
+     *
      * @return <code>true</code> if the user is not locked, <code>false</code> otherwise
      */
     @Override
     public boolean isAccountNonLocked() {
-        // @TODO - review this
-        return false;
+        return true;
     }
 
     /**
      * Indicates whether the user's credentials (password) has expired. Expired
      * credentials prevent authentication.
      *
+     * This implementation shall return true by default
+     *
      * @return <code>true</code> if the user's credentials are valid (ie non-expired),
      * <code>false</code> if no longer valid (ie expired)
      */
     @Override
     public boolean isCredentialsNonExpired() {
-        // @TODO - review this
-        return false;
+        return true;
     }
 
     /**
      * Will return true if the email is verified, otherwise it will return false
      */
-   @Override
+    @Override
     public boolean isEnabled() {
         return emailVerified;
     }

@@ -1,8 +1,11 @@
 package com.auth0.spring.security.mvc;
 
+import com.auth0.Auth0AuthorityStrategy;
+import com.auth0.jwt.Algorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.context.web.OrderedRequestContextFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -15,7 +18,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.web.context.request.RequestContextListener;
 
 /**
  * Auth0 Security Config that wires together dependencies required
@@ -23,9 +25,9 @@ import org.springframework.web.context.request.RequestContextListener;
  * Applications are expected to extend this Config
  */
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 @PropertySource("classpath:auth0.properties")
-public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
+public class Auth0Config extends WebSecurityConfigurerAdapter {
 
     @Value(value = "${auth0.domain}")
     protected String domain;
@@ -39,6 +41,18 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
     @Value(value = "${auth0.clientSecret}")
     protected String clientSecret;
 
+    @Value(value = "${auth0.onLogoutRedirectTo}")
+    protected String onLogoutRedirectTo;
+
+    @Value(value = "${auth0.loginRedirectOnSuccess}")
+    protected String loginRedirectOnSuccess;
+
+    @Value(value = "${auth0.loginRedirectOnFail}")
+    protected String loginRedirectOnFail;
+
+    @Value(value = "${auth0.loginCallback}")
+    protected String loginCallback;
+
     @Value(value = "${auth0.securedRoute}")
     protected String securedRoute;
 
@@ -48,6 +62,18 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
     @Value(value = "${auth0.base64EncodedSecret}")
     protected boolean base64EncodedSecret;
 
+    /**
+     * default to HS256 for backwards compatibility
+     */
+    @Value(value = "${auth0.signingAlgorithm:HS256}")
+    protected String signingAlgorithm;
+
+    /**
+     * default to empty string as HS256 is default
+     */
+    @Value(value = "${auth0.publicKeyPath:}")
+    protected String publicKeyPath;
+
     @Autowired
     @SuppressWarnings("SpringJavaAutowiringInspection")
     @Bean(name = "auth0AuthenticationManager")
@@ -55,7 +81,7 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
         return super.authenticationManagerBean();
     }
 
-    @Bean(name = "auth0CORSFilter")
+    @Bean
     public Auth0CORSFilter simpleCORSFilter() {
         return new Auth0CORSFilter();
     }
@@ -78,6 +104,8 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
         authenticationProvider.setSecuredRoute(securedRoute);
         authenticationProvider.setAuthorityStrategy(authorityStrategy);
         authenticationProvider.setBase64EncodedSecret(base64EncodedSecret);
+        authenticationProvider.setSigningAlgorithm(Algorithm.valueOf(this.signingAlgorithm));
+        authenticationProvider.setPublicKeyPath(this.publicKeyPath);
         return authenticationProvider;
     }
 
@@ -107,8 +135,8 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public RequestContextListener requestContextListener() {
-        return new RequestContextListener();
+    public OrderedRequestContextFilter requestContextFilter() {
+        return new OrderedRequestContextFilter();
     }
 
     @Override
@@ -128,8 +156,8 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
 
         // Add Auth0 Authentication Filter
-        http.addFilterAfter(auth0AuthenticationFilter(auth0AuthenticationEntryPoint()), SecurityContextPersistenceFilter.class);
-        http.addFilterBefore(simpleCORSFilter(), Auth0AuthenticationFilter.class);
+        http.addFilterAfter(auth0AuthenticationFilter(auth0AuthenticationEntryPoint()), SecurityContextPersistenceFilter.class)
+                .addFilterBefore(simpleCORSFilter(), Auth0AuthenticationFilter.class);
 
         // Apply the Authentication and Authorization Strategies your application endpoints require
         authorizeRequests(http);
@@ -141,14 +169,70 @@ public class Auth0SecurityConfig extends WebSecurityConfigurerAdapter {
     /**
      * Lightweight default configuration that offers basic authorization checks for authenticated
      * users on secured endpoint, and sets up a Principal user object with granted authorities
-     *
-     *  Update for your application's needs
+     * <p>
+     * For simple apps, this is sufficient, however for applications wishing to specify fine-grained
+     * endpoint access restrictions, use Role / Group level endpoint authorization etc, then this configuration
+     * should be disabled and a copy, augmented with your own requirements provided. See Sample app for example
+     * <p>
+     * Override this function in subclass to apply custom authentication / authorization
+     * strategies to your application endpoints
      */
     protected void authorizeRequests(final HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/", "/css/**", "/fonts/**", "/assets/**", "/login").permitAll()
-                .antMatchers("/portal/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-                .antMatchers(securedRoute).authenticated();
+                .antMatchers(securedRoute).authenticated()
+                .antMatchers("/**").permitAll();
     }
 
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public String getIssuer() {
+        return issuer;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public String getLoginRedirectOnSuccess() {
+        return loginRedirectOnSuccess;
+    }
+
+    public String getLoginRedirectOnFail() {
+        return loginRedirectOnFail;
+    }
+
+    public String getOnLogoutRedirectTo() {
+        return onLogoutRedirectTo;
+    }
+
+    public String getLoginCallback() {
+        return loginCallback;
+    }
+
+    public String getSecuredRoute() {
+        return securedRoute;
+    }
+
+    public String getAuthorityStrategy() {
+        return authorityStrategy;
+    }
+
+    public boolean isBase64EncodedSecret() {
+        return base64EncodedSecret;
+    }
+
+    public String getSigningAlgorithm() {
+        return signingAlgorithm;
+    }
+
+    public String getPublicKeyPath() {
+        return publicKeyPath;
+    }
 }

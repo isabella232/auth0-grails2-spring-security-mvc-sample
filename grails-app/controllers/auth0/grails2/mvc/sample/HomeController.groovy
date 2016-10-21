@@ -1,9 +1,9 @@
 package auth0.grails2.mvc.sample
 
+import com.auth0.Auth0User
+import com.auth0.SessionUtils
+import com.auth0.spring.security.mvc.Auth0Config
 import com.auth0.spring.security.mvc.Auth0UserDetails
-import com.auth0.web.Auth0Config
-import com.auth0.web.Auth0User
-import com.auth0.web.SessionUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 

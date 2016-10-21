@@ -1,8 +1,6 @@
 package auth0.grails2.mvc.sample
 
-import com.auth0.web.Auth0Config
-import org.codehaus.groovy.grails.web.servlet.mvc.GrailsWebRequest
-import org.codehaus.groovy.grails.web.util.WebUtils
+import com.auth0.spring.security.mvc.Auth0Config
 import org.springframework.beans.factory.annotation.Autowired
 
 class LogoutController {

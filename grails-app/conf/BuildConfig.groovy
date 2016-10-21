@@ -51,7 +51,8 @@ grails.project.dependency.resolution = {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes e.g.
         // runtime 'mysql:mysql-connector-java:5.1.29'
         // runtime 'org.postgresql:postgresql:9.3-1101-jdbc41'
-        compile 'com.auth0:auth0-spring-mvc:0.0.1'
+        compile 'com.auth0:mvc-auth-commons:0.1.1'
+        compile 'org.springframework.boot:spring-boot-starter-web:1.3.5.RELEASE'
         compile 'org.springframework.security:spring-security-core:4.0.2.RELEASE'
         compile 'org.springframework.security:spring-security-config:4.0.2.RELEASE'
         compile 'org.springframework.security:spring-security-web:4.0.2.RELEASE'
