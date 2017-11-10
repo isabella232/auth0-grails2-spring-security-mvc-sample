@@ -5,7 +5,7 @@
     <asset:stylesheet src="bootstrap.css"/>
     <asset:stylesheet src="jquery.growl.css"/>
     <script src="http://code.jquery.com/jquery.js"></script>
-    <script src="https://cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
+    <script src="http://cdn.auth0.com/js/lock/11.0.0-beta.1/lock.min.js"></script>
     <asset:javascript src="jquery.growl.js"/>
 </head>
 <body>
